@@ -1,0 +1,59 @@
+
+# docker/staging/docker-compose.yml
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: ../../
+      dockerfile: docker/staging/Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DEBUG=False
+      - SECRET_KEY=${SECRET_KEY}
+      - DB_NAME=${DB_NAME:-postgres}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-staging.example.com}
+      - SENTRY_DSN=${SENTRY_DSN}
+      - SECURE_SSL_REDIRECT=${SECURE_SSL_REDIRECT:-True}
+    networks:
+      - django_network
+    restart: always
+
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data_staging:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_DB=${DB_NAME:-postgres}
+    networks:
+      - django_network
+    restart: always
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../../nginx/staging:/etc/nginx/conf.d
+      - ../../staticfiles:/staticfiles
+    depends_on:
+      - web
+    networks:
+      - django_network
+    restart: always
+
+volumes:
+  postgres_data_staging:
+
+networks:
+  django_network:

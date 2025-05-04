@@ -1,0 +1,54 @@
+
+# .github/workflows/production.yml
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ production ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.7.0
+      with:
+        ssh-private-key: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+    
+    - name: Add host key
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan -H ${{ secrets.PRODUCTION_HOST }} >> ~/.ssh/known_hosts
+    
+    - name: Deploy to production server
+      env:
+        PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
+        PRODUCTION_USER: ${{ secrets.PRODUCTION_USER }}
+      run: |
+        # Copy files to server
+        rsync -avz --exclude='.git/' --exclude='venv/' --exclude='__pycache__/' ./ ${PRODUCTION_USER}@${PRODUCTION_HOST}:/home/${PRODUCTION_USER}/myproject/
+        
+        # SSH into server and restart services
+        ssh ${PRODUCTION_USER}@${PRODUCTION_HOST} << 'ENDSSH'
+          cd /home/${PRODUCTION_USER}/myproject
+          # Make scripts executable
+          chmod +x scripts/*.sh
+          
+          # Set environment variables in .env file
+          cat > .env << EOL
+          SECRET_KEY=${{ secrets.PRODUCTION_SECRET_KEY }}
+          DB_NAME=${{ secrets.PRODUCTION_DB_NAME }}
+          DB_USER=${{ secrets.PRODUCTION_DB_USER }}
+          DB_PASSWORD=${{ secrets.PRODUCTION_DB_PASSWORD }}
+          ALLOWED_HOSTS=${{ secrets.PRODUCTION_ALLOWED_HOSTS }}
+          SENTRY_DSN=${{ secrets.PRODUCTION_SENTRY_DSN }}
+          EOL
+          
+          # Deploy with Docker Compose
+          cd docker/production
+          docker-compose down
+          docker-compose build
+          docker-compose up -d
+        ENDSSH
