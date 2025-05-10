@@ -46,18 +46,18 @@ jobs:
       env:
         PGPASSWORD: postgres
     
-    - name: Run tests
-      env:
-        DJANGO_SETTINGS_MODULE: myproject.settings.test
-        SECRET_KEY: github-actions-test-key
-        DB_NAME: github_actions
-        DB_USER: postgres
-        DB_PASSWORD: postgres
-        DB_HOST: localhost
-        DB_PORT: 5432
-      # run: |
-      #   cd app/core
-      #   pytest --cov=./ --cov-report=xml
+    # - name: Run tests
+    #   env:
+    #     DJANGO_SETTINGS_MODULE: myproject.settings.test
+    #     SECRET_KEY: github-actions-test-key
+    #     DB_NAME: github_actions
+    #     DB_USER: postgres
+    #     DB_PASSWORD: postgres
+    #     DB_HOST: localhost
+    #     DB_PORT: 5432
+    #   run: |
+    #   #   cd app/core
+    #     pytest --cov=./ --cov-report=xml
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
