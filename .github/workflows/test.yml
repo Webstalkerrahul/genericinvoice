@@ -56,7 +56,7 @@ jobs:
         DB_HOST: localhost
         DB_PORT: 5432
       run: |
-        cd app
+        cd app/core
         pytest --cov=./ --cov-report=xml
     
     - name: Upload coverage to Codecov
